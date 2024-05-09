@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-class RsaKeyPairRepositoryJWKSource implements JWKSource<SecurityContext>, OAuth2TokenCustomizer<JwtEncodingContext> {
+public class RsaKeyPairRepositoryJWKSource implements JWKSource<SecurityContext>, OAuth2TokenCustomizer<JwtEncodingContext> {
 
     private final RsaKeyPairRepository keyPairRepository;
 
@@ -36,7 +36,7 @@ class RsaKeyPairRepositoryJWKSource implements JWKSource<SecurityContext>, OAuth
     }
 
     @Override
-    public void customize(JwtEncodingContext context) {
+    public void customize(final JwtEncodingContext context) {
         var keyPairs = this.keyPairRepository.findAll();
         var kid = keyPairs.getFirst().getId();
         context.getJwsHeader().keyId(kid);

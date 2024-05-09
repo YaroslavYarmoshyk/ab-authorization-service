@@ -1,30 +1,33 @@
 package com.security.authorizationservice.config.converter;
 
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.serializer.Deserializer;
-import org.springframework.core.serializer.Serializer;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
-import org.springframework.stereotype.Component;
-import org.springframework.util.FileCopyUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
-@Component
+@Converter
 @RequiredArgsConstructor
-public class RsaPublicKeyConverter implements Serializer<RSAPublicKey>, Deserializer<RSAPublicKey> {
+public class RsaPublicKeyConverter implements AttributeConverter<RSAPublicKey, String> {
     private final TextEncryptor textEncryptor;
 
     @Override
-    public RSAPublicKey deserialize(final InputStream inputStream) {
+    public String convertToDatabaseColumn(RSAPublicKey attribute) {
+        var x509EncodedKeySpec = new X509EncodedKeySpec(attribute.getEncoded());
+        var pem = "-----BEGIN PUBLIC KEY-----\n" +
+                Base64.getMimeEncoder().encodeToString(x509EncodedKeySpec.getEncoded()) +
+                "\n-----END PUBLIC KEY-----";
+        return this.textEncryptor.encrypt(pem);
+    }
+
+    @Override
+    public RSAPublicKey convertToEntityAttribute(String dbData) {
         try {
-            var pem = textEncryptor.decrypt(FileCopyUtils.copyToString(new InputStreamReader(inputStream)));
+            var pem = textEncryptor.decrypt(dbData);
             var publicKeyPEM = pem
                     .replace("-----BEGIN PUBLIC KEY-----", "")
                     .replace("-----END PUBLIC KEY-----", "");
@@ -35,14 +38,5 @@ public class RsaPublicKeyConverter implements Serializer<RSAPublicKey>, Deserial
         } catch (final Throwable throwable) {
             throw new IllegalArgumentException("Cannot deserialize public key", throwable);
         }
-    }
-
-    @Override
-    public void serialize(final RSAPublicKey object, final OutputStream outputStream) throws IOException {
-        var x509EncodedKeySpec = new X509EncodedKeySpec(object.getEncoded());
-        var pem = "-----BEGIN PUBLIC KEY-----\n" +
-                Base64.getMimeEncoder().encodeToString(x509EncodedKeySpec.getEncoded()) +
-                "\n-----END PUBLIC KEY-----";
-        outputStream.write(this.textEncryptor.encrypt(pem).getBytes());
     }
 }

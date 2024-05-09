@@ -5,8 +5,6 @@ import com.security.authorizationservice.config.converter.RsaPublicKeyConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -28,7 +26,6 @@ import java.time.Instant;
 @Table(name = "rsa_key_pairs")
 public class RsaKeyPair {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
     @Column(name = "created", nullable = false, columnDefinition = "TIMESTAMPTZ")
     private Instant created;

@@ -34,7 +34,7 @@ public class JwtServiceImpl implements JwtService {
                 .collect(Collectors.joining(" "));
         final Instant now = Instant.now(Clock.system(DEFAULT_ZONE_ID));
         final JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("self")
+                .issuer("http://localhost:8082")
                 .issuedAt(now)
                 .expiresAt(now.plus(expirationTime, ChronoUnit.HOURS))
                 .subject(authentication.getName())
