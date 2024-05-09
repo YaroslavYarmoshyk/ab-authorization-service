@@ -1,0 +1,53 @@
+server:
+  error:
+    include-stacktrace: never
+
+spring:
+  security:
+    oauth2:
+      authorizationserver:
+        client:
+          client-1:
+            registration:
+              client-id: client
+              client-secret: $2a$12$dAu80UdeqyhJozF/kh7LdOIAhr2uIrZavFdoD13VbY.acdupxQbzm
+              client-authentication-methods:
+                - client_secret_basic
+              authorization-grant-types:
+                - client_credentials
+                - authorization_code
+                - refresh_token
+              scopes:
+                - openid
+            require-authorization-consent: true
+  datasource:
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    url: ${DB_URL}
+  jpa:
+    open-in-view: false
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+  sql:
+    init:
+      mode: always
+
+jwt:
+  persistence:
+    password: password
+    salt: 626F6F746966756C
+  key:
+    id: some_key_id
+  expiration-time: 24 # hours
+
+rsa:
+  private-key: classpath:rsa/private.pem
+  public-key: classpath:rsa/public.pem
+
+system-configuration:
+  public-endpoints: /api/auth/**, /swagger-ui/**, /v3/api-docs/**, /error
+
+logging:
+  level:
+    org.springframework.security: TRACE
