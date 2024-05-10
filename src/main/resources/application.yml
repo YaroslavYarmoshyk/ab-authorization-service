@@ -21,7 +21,7 @@ jwt:
     password: password
     salt: 626F6F746966756C
   key:
-    id: some_key_id
+    id: beautiful_key_id
   expiration-time: 24 # hours
 
 logging:

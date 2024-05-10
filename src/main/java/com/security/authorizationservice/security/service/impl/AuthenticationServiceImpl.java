@@ -53,7 +53,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public Map<String, Object> getJwks() {
-        return jwkSet.toJSONObject();
+        return jwkSet.toJSONObject(true);
     }
 
     private void validateUserRegistration(final UserRegistrationRequestDto registrationDto) {
