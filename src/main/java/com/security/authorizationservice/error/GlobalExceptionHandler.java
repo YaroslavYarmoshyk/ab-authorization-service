@@ -4,6 +4,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +47,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatusCode.valueOf(apiError.code()));
     }
 
+    @ExceptionHandler(value = BadCredentialsException.class)
+    protected ResponseEntity<ApiError> handleBadCredentialsException(final BadCredentialsException ex) {
+        final ApiError apiError = getApiError(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return new ResponseEntity<>(apiError, HttpStatusCode.valueOf(apiError.code()));
+    }
+
     @ExceptionHandler(value = RegistrationException.class)
     protected ResponseEntity<ApiError> handleRegistrationException(final RegistrationException ex) {
         final ApiError apiError = getApiError(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -57,7 +64,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private static ApiError getApiError(final HttpStatus status, final Collection<String> errors) {
-        return new ApiError(LocalDateTime.now(), status, status.value(), errors);
+        return new ApiError(ZonedDateTime.now(), status, status.value(), errors);
     }
 
     private String getErrorMessage(ObjectError e) {

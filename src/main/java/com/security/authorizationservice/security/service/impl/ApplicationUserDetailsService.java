@@ -1,7 +1,7 @@
 package com.security.authorizationservice.security.service.impl;
 
+import com.security.authorizationservice.error.EntityNotFoundException;
 import com.security.authorizationservice.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
