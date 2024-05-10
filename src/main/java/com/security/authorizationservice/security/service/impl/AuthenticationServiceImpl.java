@@ -1,5 +1,6 @@
 package com.security.authorizationservice.security.service.impl;
 
+import com.nimbusds.jose.jwk.JWKSet;
 import com.security.authorizationservice.dto.UserLoginRequestDto;
 import com.security.authorizationservice.dto.UserLoginResponseDto;
 import com.security.authorizationservice.dto.UserRegistrationRequestDto;
@@ -17,6 +18,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class AuthenticationServiceImpl implements AuthenticationService {
@@ -25,6 +28,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+    private final JWKSet jwkSet;
 
     @Override
     public UserResponseDto register(final UserRegistrationRequestDto registrationDto) {
@@ -45,6 +49,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final Authentication authentication = authenticationManager.authenticate(authToken);
         final String jwt = jwtService.generateToken(authentication);
         return new UserLoginResponseDto(jwt);
+    }
+
+    @Override
+    public Map<String, Object> getJwks() {
+        return jwkSet.toJSONObject();
     }
 
     private void validateUserRegistration(final UserRegistrationRequestDto registrationDto) {

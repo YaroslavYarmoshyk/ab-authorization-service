@@ -1,7 +1,11 @@
 package com.security.authorizationservice.security;
 
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.security.authorizationservice.model.RsaKeyPair;
+import com.security.authorizationservice.repository.RsaKeyPairRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,42 +15,38 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.OAuth2Token;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
-import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
-import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2RefreshTokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-
-import static com.security.authorizationservice.constants.SecurityConstants.ROLES_CLAIM;
 
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final AuthenticationEntryPoint authenticationEntryPoint;
+    private final RsaKeyPairRepository keyPairRepository;
+    private RsaKeyPair rsaKeyPair;
 
     @Bean
-    public SecurityFilterChain authorizationServerSecurityFilterChain(final HttpSecurity http) throws Exception {
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                .oidc(Customizer.withDefaults());
-        http.oauth2ResourceServer((resourceServer) -> resourceServer
-                .jwt(Customizer.withDefaults())
-                .authenticationEntryPoint(authenticationEntryPoint));
+    public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        .requestMatchers("/api/auth/**")
+                        .permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults())
+                        .authenticationEntryPoint(authenticationEntryPoint))
+                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }
@@ -66,28 +66,28 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtEncoder jwtEncoder(final JWKSource<SecurityContext> jwkSource) {
-        return new NimbusJwtEncoder(jwkSource);
+    public JWKSet jwkSet() {
+        final var rsaKey = new RSAKey.Builder(rsaKeyPair.getPublicKey())
+                .privateKey(rsaKeyPair.getPrivateKey())
+                .keyID(rsaKeyPair.getId())
+                .build();
+        return new JWKSet(rsaKey);
     }
 
     @Bean
-    public OAuth2TokenGenerator<OAuth2Token> delegatingOAuth2TokenGenerator(
-            final JwtEncoder encoder,
-            final OAuth2TokenCustomizer<JwtEncodingContext> customizer) {
-        var generator = new JwtGenerator(encoder);
-        generator.setJwtCustomizer(customizer);
-        return new DelegatingOAuth2TokenGenerator(generator,
-                new OAuth2AccessTokenGenerator(), new OAuth2RefreshTokenGenerator());
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withPublicKey(rsaKeyPair.getPublicKey()).build();
     }
 
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        final var grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthoritiesClaimName(ROLES_CLAIM);
-        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
+    public JwtEncoder jwtEncoder() {
+        return new NimbusJwtEncoder(new ImmutableJWKSet<>(jwkSet()));
+    }
 
-        final var jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-        return jwtAuthenticationConverter;
+    @PostConstruct
+    public void init() {
+        rsaKeyPair = keyPairRepository.findAll().stream()
+                .findFirst()
+                .orElseThrow();
     }
 }

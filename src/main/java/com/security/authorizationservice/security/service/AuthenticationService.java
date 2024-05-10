@@ -5,8 +5,12 @@ import com.security.authorizationservice.dto.UserLoginResponseDto;
 import com.security.authorizationservice.dto.UserRegistrationRequestDto;
 import com.security.authorizationservice.dto.UserResponseDto;
 
+import java.util.Map;
+
 public interface AuthenticationService {
     UserResponseDto register(final UserRegistrationRequestDto registrationDto);
 
     UserLoginResponseDto login(final UserLoginRequestDto loginDto);
+
+    Map<String, Object> getJwks();
 }

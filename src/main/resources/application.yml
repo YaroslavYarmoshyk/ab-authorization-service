@@ -3,23 +3,6 @@ server:
     include-stacktrace: never
 
 spring:
-  security:
-    oauth2:
-      authorizationserver:
-        client:
-          client-1:
-            registration:
-              client-id: client
-              client-secret: $2a$12$dAu80UdeqyhJozF/kh7LdOIAhr2uIrZavFdoD13VbY.acdupxQbzm
-              client-authentication-methods:
-                - client_secret_basic
-              authorization-grant-types:
-                - client_credentials
-                - authorization_code
-                - refresh_token
-              scopes:
-                - openid
-            require-authorization-consent: true
   datasource:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
