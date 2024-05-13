@@ -26,6 +26,8 @@ public class JwtServiceImpl implements JwtService {
     private final JwtEncoder jwtEncoder;
     @Value("${jwt.expiration-time}")
     private int expirationTime;
+    @Value("${jwt.issuer}")
+    private String issuer;
 
     @Override
     public String generateToken(final Authentication authentication) {
@@ -34,7 +36,7 @@ public class JwtServiceImpl implements JwtService {
                 .collect(Collectors.joining(" "));
         final Instant now = Instant.now(Clock.system(DEFAULT_ZONE_ID));
         final JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("http://localhost:8082")
+                .issuer(issuer)
                 .issuedAt(now)
                 .expiresAt(now.plus(expirationTime, ChronoUnit.HOURS))
                 .subject(authentication.getName())

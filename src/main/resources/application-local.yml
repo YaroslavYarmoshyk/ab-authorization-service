@@ -1,2 +1,5 @@
 server:
   port: 8082
+
+jwt:
+  issuer: http://localhost:8082
