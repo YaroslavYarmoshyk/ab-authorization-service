@@ -3,12 +3,9 @@ package com.security.authorizationservice.security;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.security.authorizationservice.config.rsa.RsaKeysGenerator;
+import com.security.authorizationservice.config.rsa.RsaKeyPairInitializer;
 import com.security.authorizationservice.model.RsaKeyPair;
-import com.security.authorizationservice.repository.RsaKeyPairRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,17 +24,11 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.time.Instant;
-
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final RsaKeyPairRepository keyPairRepository;
-    private final RsaKeysGenerator rsaKeysGenerator;
-    private RsaKeyPair rsaKeyPair;
-    @Value("${jwt.key.id}")
-    private String keyId;
+    private final RsaKeyPairInitializer rsaKeyPairInitializer;
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
@@ -69,6 +60,7 @@ public class SecurityConfig {
 
     @Bean
     public JWKSet jwkSet() {
+        final RsaKeyPair rsaKeyPair = rsaKeyPairInitializer.getRsaKeyPair();
         final var rsaKey = new RSAKey.Builder(rsaKeyPair.getPublicKey())
                 .privateKey(rsaKeyPair.getPrivateKey())
                 .keyID(rsaKeyPair.getId())
@@ -78,22 +70,12 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
+        final RsaKeyPair rsaKeyPair = rsaKeyPairInitializer.getRsaKeyPair();
         return NimbusJwtDecoder.withPublicKey(rsaKeyPair.getPublicKey()).build();
     }
 
     @Bean
     public JwtEncoder jwtEncoder() {
         return new NimbusJwtEncoder(new ImmutableJWKSet<>(jwkSet()));
-    }
-
-    @PostConstruct
-    public void init() {
-        rsaKeyPair = keyPairRepository.findAll().stream()
-                .findFirst()
-                .orElse(generateNewKeys());
-    }
-
-    private RsaKeyPair generateNewKeys() {
-        return keyPairRepository.save(rsaKeysGenerator.generateKeyPair(keyId, Instant.now()));
     }
 }
