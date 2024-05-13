@@ -13,5 +13,4 @@ public class TextEncryptorConfiguration {
                                        @Value("${jwt.persistence.salt}") String salt) {
         return Encryptors.text(pw, salt);
     }
-
 }
